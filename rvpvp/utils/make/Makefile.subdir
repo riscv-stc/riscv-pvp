@@ -1,0 +1,47 @@
+rootdir := {ROOTDIR}
+pkgroot := {PKGROOT}
+
+include $(rootdir)/build/variables.mk
+
+all: diff
+
+# generate
+INCS = -I$(pkgroot)/env/p -I$(pkgroot)/macros/scalar -I$(pkgroot)/macros/vector
+LIBS = -T$(pkgroot)/env/p/link.ld
+
+elf: test.elf test.dump
+
+test.elf: test.S
+	$(CC) $(INCS) $(CFLAGS) $(LDFLAGS) $(LIBS) -Wl,-Map,test.map $< -o $@
+
+test.dump: test.elf
+	$(OBJDUMP) $< > $@
+
+# simulate
+include $(rootdir)/build/spike.mk
+-include $(rootdir)/build/gem5.mk
+-include $(rootdir)/build/vcs.mk
+sim: $(foreach SIM, $(SIMS), $(SIM).log)
+
+# check python golden data and spike result data
+check: spike check.data
+
+check.data: spike.sig
+	$(rootdir)/build/check.py check_golden.npy $< $(READELF)
+
+# diff
+diff: sim check $(foreach SIM, $(filter-out spike,$(SIMS)), diff-$(SIM).data)
+
+diff-%.data: %.sig
+	$(rootdir)/build/diff.py spike.npy $<
+
+clean:
+	-rm -f *.elf *.dump *.sig *.log *.run *.tmp *.data *.map
+
+help:
+	@echo "make        \tRun all steps."
+	@echo "make elf    \tGenerate elf file."
+	@echo "make sim    \tRun simulators."
+	@for i in $(SIMS); do echo "make $$i\tRun simulators." ; done
+	@echo "make diff   \tDiff with spike golden data."
+	@echo "make clean  \tClean files."

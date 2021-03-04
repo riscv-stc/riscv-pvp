@@ -1,0 +1,482 @@
+_: &default
+  env: RVTEST_RV64UV
+  head: |
+    #include "exception.h"
+    #include "test_macros_v.h"
+
+  templates:
+    test_basic_vmvnv_v: |
+      test_{num}:
+        li TESTNUM, {num};       
+        li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;       
+        la a1, {vs2_data};
+        la a2, {ori_data};
+        vle{sew}.v  v8, (a1);
+        vle{sew}.v  v0, (a2);
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma; 
+        {name} v0, v8;
+        csrr t0, vstart;
+        beqz t0, 1f;                  
+        j fail;
+      1:li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma; 
+        la a4, test_{num}_data;
+        vse{sew}.v  v0, (a4);
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill {leng}, ({sew}/8), 0;
+        .popsection
+
+    test_random_regression_vmvnv_v: |
+      test_{num}:
+        li TESTNUM, {num};       
+        li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;       
+        la a1, {vs2_data};
+        la a2, {ori_data};
+        vle{sew}.v  v8, (a1);
+        vle{sew}.v  v0, (a2);
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma; 
+        {name} v0, v8;
+        csrr t0, vstart;
+        beqz t0, 1f;                  
+        j fail;
+      1:li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma; 
+        la a4, test_{num}_data;
+        vse{sew}.v  v0, (a4);
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill {leng}, ({sew}/8), 0;
+        .popsection
+    
+    test_agnostic_tu_vmvnv_v: |
+      test_{num}:
+        li TESTNUM, {num};       
+        li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},tu,ma;
+        la a1, {ori_data};       
+        la a2, {vs2_data};
+        vle{sew}.v  v0, (a1);
+        vle{sew}.v  v8, (a2);
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},tu,ma; 
+        {name} v0, v8;
+        csrr t0, vstart;
+        beqz t0, 1f;                  
+        j fail;
+      1:li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},tu,ma; 
+        la a2, test_{num}_data;
+        vse{sew}.v  v0, (a2);
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill {leng}, ({sew}/8), 0;
+        .popsection
+
+    test_vstart_not_eq_zero_vmvnv_v: |
+      test_{num}:
+        li TESTNUM, {num};       
+        li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;       
+        la a1, {ori_data};
+        la a2, {vs2_data};
+        vle{sew}.v  v0, (a1);
+        vle{sew}.v  v8, (a2);
+        li t2, {vstart};
+        csrw vstart, t2;
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        {name} v0, v8;
+        csrr t0, vstart;
+        beqz t0, 1f;                  
+        j fail;
+      1:li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a4, test_{num}_data;
+        vse{sew}.v  v0, (a4);
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill {leng}, ({sew}/8), 0;
+        .popsection
+
+    test_vl_equal_zero_vmvnv_v: |
+      test_{num}:
+        li TESTNUM, {num};       
+        li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;       
+        la a1, {vs2_data};
+        la a2, {ori_data};
+        vle{sew}.v  v8, (a1);
+        vle{sew}.v  v0, (a2);
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        {name} v0, v8;
+        csrr t0, vstart;
+        beqz t0, 1f;                  
+        j fail;
+      1:li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a4, test_{num}_data;
+        vse{sew}.v  v0, (a4);
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill {leng}, ({sew}/8), 0;
+        .popsection
+
+    test_dest_eq_vs2_vmvnv_v: |
+      test_{num}:
+        li TESTNUM, {num};       
+        li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;       
+        la a1, {vs2_data};
+        vle{sew}.v  v8, (a1);
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        {name} v8, v8;
+        csrr t0, vstart;
+        beqz t0, 1f;                  
+        j fail;
+      1:li a0, {leng};
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a2, test_{num}_data;
+        vse{sew}.v  v8, (a2);
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill {leng}, ({sew}/8), 0;
+        .popsection   
+
+    test_exception_wrong_lmul_vregNum: |
+      test_{num}: 
+        li TESTNUM, {num};            
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);  
+
+        li a0, {vl};     
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        {name} {vd_name}, {vs2_name}; 
+        j fail;
+      test_{num}_end:  
+
+
+  rule: co_verification
+  rule_params:
+    test_basic_vmvnv_v: np.array_equal(result, golden)
+    test_random_regression_vmvnv_v: np.array_equal(result, golden)
+    test_agnostic_tu_vmvnv_v: np.array_equal(result, golden)
+    test_vstart_not_eq_zero_vmvnv_v: np.array_equal(result, golden)
+    test_vl_equal_zero_vmvnv_v: np.array_equal(result, golden)
+    test_dest_eq_vs2_vmvnv_v: np.array_equal(result, golden)
+    
+
+vmv1r_v:
+  <<: *default
+  basic_cases:
+    test_basic_vmvnv_v : 
+      matrix: 
+        nf  : 1
+        sew : [8, 16, 32]
+        lmul: [1, 2, 4]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        
+
+  random_cases:
+    test_random_regression_vmvnv_v : 
+      matrix: 
+        nf  : 1
+        sew : [8, 16, 32]
+        lmul: [1, 2, 4]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.random.uniform(bits_to_intmin(sew), bits_to_intmax(sew), leng).astype(bits_to_dtype_int(sew))
+        ori : np.random.uniform(bits_to_intmin(sew), bits_to_intmax(sew), leng).astype(bits_to_dtype_int(sew))
+
+
+  cases:
+    test_agnostic_tu_vmvnv_v : 
+      matrix: 
+        nf  : 1
+        sew : [8, 16, 32]
+        lmul: [1, 2, 4]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        ori : np.linspace( 0,  leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        
+    test_vstart_not_eq_zero_vmvnv_v : 
+      matrix: 
+        nf  : 1
+        sew : [8, 16, 32]
+        lmul: [1, 2, 4]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        vstart: [sew//3, vl//2] 
+
+    test_vl_equal_zero_vmvnv_v : 
+      matrix: 
+        nf  : 1
+        sew : [8, 32]
+        lmul: [1, 2, 4]
+        leng: nf*vlen//sew
+        vl  : 0
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+
+    test_dest_eq_vs2_vmvnv_v : 
+      matrix: 
+        nf  : 1
+        sew : [8, 32]
+        lmul: [1, 2, 4]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        ori : vs2
+
+
+vmv2r_v:
+  <<: *default
+  basic_cases:
+    test_basic_vmvnv_v : 
+      matrix: 
+        nf  : 2
+        sew : [8, 16, 32]
+        lmul: [2, 4, 8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+
+
+  random_cases:
+    test_random_regression_vmvnv_v : 
+      matrix: 
+        nf  : 2
+        sew : [8, 16, 32]
+        lmul: [2, 4, 8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.random.uniform(bits_to_intmin(sew), bits_to_intmax(sew), leng).astype(bits_to_dtype_int(sew))
+        ori : np.random.uniform(bits_to_intmin(sew), bits_to_intmax(sew), leng).astype(bits_to_dtype_int(sew))
+
+
+  cases:
+    test_agnostic_tu_vmvnv_v : 
+      matrix: 
+        nf  : 2
+        sew : [8, 16, 32]
+        lmul: [2, 4, 8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+
+    test_vstart_not_eq_zero_vmvnv_v : 
+      matrix: 
+        nf  : 2
+        sew : [8, 16, 32]
+        lmul: [2, 4, 8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        vstart: [vl//2] 
+
+    test_vl_equal_zero_vmvnv_v : 
+      matrix: 
+        nf  : 2
+        sew : [16, 32]
+        lmul: [2, 4, 8]
+        leng: nf*vlen//sew
+        vl  : 0
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+
+    test_dest_eq_vs2_vmvnv_v : 
+      matrix: 
+        nf  : 2
+        sew : [8, 16, 32]
+        lmul: [2, 4, 8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        ori : vs2
+
+    test_exception_wrong_lmul_vregNum @ sew, lmul, vl, vs2_name, vd_name:
+      - [  8, 2, 50, "v1",  "v4"  ]
+      - [ 16, 2, 50, "v3",  "v5"  ]
+      - [ 32, 2, 35, "v3",  "v8"  ]
+      - [  8, 4, 30, "v4",  "v27" ]
+      - [ 16, 4, 77, "v16", "v21" ]
+      - [ 32, 8, 55, "v8",  "v19" ]
+
+
+vmv4r_v:
+  <<: *default
+  basic_cases:
+    test_basic_vmvnv_v : 
+      matrix: 
+        nf  : 4
+        sew : [8, 16, elen]
+        lmul: [4, 8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+
+
+  random_cases:
+    test_random_regression_vmvnv_v : 
+      matrix: 
+        nf  : 4
+        sew : [8, 16, elen]
+        lmul: [4, 8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.random.uniform(bits_to_intmin(sew), bits_to_intmax(sew), leng).astype(bits_to_dtype_int(sew))
+        ori : np.random.uniform(bits_to_intmin(sew), bits_to_intmax(sew), leng).astype(bits_to_dtype_int(sew))
+
+
+  cases:
+    test_agnostic_tu_vmvnv_v : 
+      matrix: 
+        nf  : 4
+        sew : [8, 16, elen]
+        lmul: [4, 8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))         
+
+    test_vstart_not_eq_zero_vmvnv_v : 
+      matrix: 
+        nf  : 4
+        sew : [8, 16, elen]
+        lmul: [4, 8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        vstart: [2, vl//3] 
+
+    test_vl_equal_zero_vmvnv_v : 
+      matrix: 
+        nf  : 4
+        sew : [8, elen]
+        lmul: [4, 8]
+        leng: nf*vlen//sew
+        vl  : 0
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+
+    test_dest_eq_vs2_vmvnv_v : 
+      matrix: 
+        nf  : 4
+        sew : [8, 16, elen]
+        lmul: [4, 8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        ori : vs2
+
+    test_exception_wrong_lmul_vregNum @ sew, lmul, vl, vs2_name, vd_name:
+      - [  8, 2, 50, "v1",  "v4"  ]
+      - [ 16, 2, 50, "v3",  "v5"  ]
+      - [ 32, 2, 35, "v3",  "v8"  ]
+      - [  8, 4, 30, "v4",  "v27" ]
+      - [ 16, 4, 77, "v16", "v22" ]
+      - [ 32, 8, 55, "v8",  "v18" ]
+
+
+vmv8r_v:
+  <<: *default
+  basic_cases:
+    test_basic_vmvnv_v : 
+      matrix: 
+        nf  : 8
+        sew : [8, 16, elen]
+        lmul: [8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+
+
+  random_cases:
+    test_random_regression_vmvnv_v : 
+      matrix: 
+        nf  : 8
+        sew : [8, 16, elen]
+        lmul: [8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.random.uniform(bits_to_intmin(sew), bits_to_intmax(sew), leng).astype(bits_to_dtype_int(sew))
+        ori : np.random.uniform(bits_to_intmin(sew), bits_to_intmax(sew), leng).astype(bits_to_dtype_int(sew))
+
+
+  cases:
+    test_agnostic_tu_vmvnv_v : 
+      matrix: 
+        nf  : 8
+        sew : [8, 16, elen]
+        lmul: [8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew)) 
+
+    test_vstart_not_eq_zero_vmvnv_v : 
+      matrix: 
+        nf  : 8
+        sew : [8, 16, elen]
+        lmul: [8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        vstart: [vl//4]  
+
+    test_vl_equal_zero_vmvnv_v : 
+      matrix: 
+        nf  : 8
+        sew : [16, elen]
+        lmul: [8]
+        leng: nf*vlen//sew
+        vl  : 0
+        ori : np.linspace( 0, leng, leng, dtype=bits_to_dtype_int(sew))
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+
+    test_dest_eq_vs2_vmvnv_v : 
+      matrix: 
+        nf  : 8
+        sew : [8, 16, elen]
+        lmul: [8]
+        leng: nf*vlen//sew
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs2 : np.linspace( bits_to_intmin(sew), bits_to_intmax(sew), leng, dtype=bits_to_dtype_int(sew))
+        ori : vs2
+
+    test_exception_wrong_lmul_vregNum @ sew, lmul, vl, vs2_name, vd_name:
+      - [  8, 2, 50, "v1",  "v4"  ]
+      - [ 16, 2, 50, "v3",  "v5"  ]
+      - [ 32, 2, 35, "v3",  "v8"  ]
+      - [  8, 4, 30, "v4",  "v27" ]
+      - [ 16, 4, 77, "v16", "v22" ]
+      - [ 32, 8, 55, "v8",  "v18" ]       

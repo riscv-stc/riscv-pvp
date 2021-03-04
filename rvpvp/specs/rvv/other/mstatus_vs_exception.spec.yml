@@ -1,0 +1,646 @@
+_: &default
+  env: RVTEST_RV64UV
+  head: | 
+    #define MSTATUS_VS 0x0600
+    #undef  EXTRA_INIT
+    #define EXTRA_INIT                              \
+      /* Set up mstatus VS and mstatus FS  */       \
+      li a0, 1;                                     \
+      vsetvli t0, a0, e32,m1,ta,ma;                 \
+      li t0, (MSTATUS_VS & (MSTATUS_VS >> 2));      \  
+      csrw mstatus, t0;   
+    #include "exception.h"
+    #include "test_macros_v.h" 
+
+  rule: co_verification                           
+  templates:
+    test_exception_mstatus_VS_assess_CSRs_r: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        csrr t0, {csr};
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_assess_CSRs_w: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        li t0, 1;
+        csrw {csr}, t0;
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_v_ldst: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.v v8, (a1);
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_v_ldst_stride: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.v v8, (a1), a2;
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_v_ldst_index: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.v v16, (a1), v8;
+        j fail;
+      test_{num}_end:
+
+
+    test_exception_mstatus_VS_instruction_vv: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.vv  v24, v16, v8; 
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_vx: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.vx  v24, v16, a1; 
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_vx2: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.vx  v24, a1, v16; 
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_vi: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.vi  v24, v16, 1; 
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_wv: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.wv  v24, v16, v8; 
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_wx: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.wx  v24, v16, a1; 
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_wi: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.wi  v24, v16, 1; 
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_vvm: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.vvm  v24, v16, v8, v0; 
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_vxm: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.vxm  v24, v16, a1, v0;
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_vim: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.vim  v24, v16, 1, v0;
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_vs: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.vs  v24, v16, v8;
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_mm: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.mm  v24, v16, v8;
+        j fail;
+      test_{num}_end:   
+
+    test_exception_mstatus_VS_instruction_vmv: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.{fix1}.{fix2}  {dst}, {s1};
+        j fail;
+      test_{num}_end: 
+
+    test_exception_mstatus_VS_instruction_vcompress: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.vm  v24, v16, v0;
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_other: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}.{type}  {dst}, {s1};
+        j fail;
+      test_{num}_end:     
+
+    test_exception_mstatus_VS_instruction_vsetIvli: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}  {parm1}, {parm2}, e8,m1,ta,ma;
+        j fail;
+      test_{num}_end:
+
+    test_exception_mstatus_VS_instruction_vsetvl: |
+      test_{num}: 
+        li TESTNUM, {num};   
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);             
+        {instruction}  {parm1}, {parm2}, {parm3};
+        j fail;
+      test_{num}_end:      
+
+vnull_vs: 
+  <<: *default
+  cases:
+    test_exception_mstatus_VS_assess_CSRs_r @ csr:
+      - '[ "vtype" ]'
+      - '[ "vl" ]'
+      - '[ "vlenb" ]'
+      - '[ "vstart" ]'
+      - '[ "vxrm" ]'    
+      - '[ "vxsat" ]' 
+
+    test_exception_mstatus_VS_assess_CSRs_w @ csr:
+      - '[ "vtype" ]'
+      - '[ "vl" ]'
+      - '[ "vlenb" ]'
+      - '[ "vstart" ]'
+      - '[ "vxrm" ]'  
+      - '[ "vxsat" ]'  
+
+    test_exception_mstatus_VS_instruction_v_ldst @ instruction:
+      - '[ "vle8" ]'
+      - '[ "vle16" ]'
+      - '[ "vle32" ]'
+      - '[ "vle64" ]'
+      - '[ "vse8" ]'
+      - '[ "vse16" ]'
+      - '[ "vse32" ]'
+      - '[ "vse64" ]'
+      - '[ "vle8ff" ]'
+      - '[ "vle16ff" ]'
+      - '[ "vle32ff" ]'
+      - '[ "vle64ff" ]'   
+      - '[ "vlseg2e32" ]'
+      - '[ "vsseg2e32" ]'
+      - '[ "vl1re8" ]'
+      - '[ "vl1re16" ]'
+      - '[ "vl1re32" ]'
+      - '[ "vl1re64" ]'
+      - '[ "vl2re8" ]'
+      - '[ "vl2re16" ]'
+      - '[ "vl2re32" ]'
+      - '[ "vl2re64" ]'
+      - '[ "vl4re8" ]'
+      - '[ "vl4re16" ]'
+      - '[ "vl4re32" ]'
+      - '[ "vl4re64" ]'
+      - '[ "vl8re8" ]'
+      - '[ "vl8re16" ]'
+      - '[ "vl8re32" ]'
+      - '[ "vl8re64" ]'  
+      - '[ "vs1r" ]'
+      - '[ "vs2r" ]'
+      - '[ "vs4r" ]'
+      - '[ "vs8r" ]'                 
+
+    test_exception_mstatus_VS_instruction_v_ldst_stride @ instruction:
+      - '[ "vlse8" ]'
+      - '[ "vlse16" ]'
+      - '[ "vlse32" ]'
+      - '[ "vlse64" ]'
+      - '[ "vsse8" ]'
+      - '[ "vsse16" ]'
+      - '[ "vsse32" ]'
+      - '[ "vsse64" ]'
+      - '[ "vlsseg2e32" ]'
+      - '[ "vssseg2e32" ]'
+
+    test_exception_mstatus_VS_instruction_v_ldst_index @ instruction:
+      - '[ "vluxei8" ]'
+      - '[ "vluxei16" ]'
+      - '[ "vluxei32" ]'
+      - '[ "vluxei64" ]'
+      - '[ "vloxei8" ]'
+      - '[ "vloxei16" ]'
+      - '[ "vloxei32" ]'
+      - '[ "vloxei64" ]'
+      - '[ "vsuxei8" ]'
+      - '[ "vsuxei16" ]'
+      - '[ "vsuxei32" ]'
+      - '[ "vsuxei64" ]'
+      - '[ "vsoxei8" ]'
+      - '[ "vsoxei16" ]'
+      - '[ "vsoxei32" ]'
+      - '[ "vsoxei64" ]'
+      - '[ "vluxseg2ei32" ]'
+      - '[ "vloxseg2ei32" ]'    
+      - '[ "vsuxseg2ei32" ]'
+      - '[ "vsoxseg2ei32" ]' 
+
+    test_exception_mstatus_VS_instruction_vv @ instruction:
+      - '[ "vadd" ]'
+      - '[ "vsub" ]'
+      - '[ "vwaddu" ]'
+      - '[ "vwsubu" ]'
+      - '[ "vwadd" ]'
+      - '[ "vwsub" ]'
+      - '[ "vmadc" ]'
+      - '[ "vmsbc" ]'
+      - '[ "vand" ]'
+      - '[ "vor" ]'
+      - '[ "vxor" ]'
+      - '[ "vsll" ]'
+      - '[ "vsrl" ]'
+      - '[ "vsra" ]'
+      - '[ "vmseq" ]'   
+      - '[ "vmsne" ]'
+      - '[ "vmsltu" ]'
+      - '[ "vmslt" ]'
+      - '[ "vmsleu" ]'
+      - '[ "vmsle" ]'
+      - '[ "vminu" ]'
+      - '[ "vmin" ]'
+      - '[ "vmaxu" ]'
+      - '[ "vmax" ]'      
+      - '[ "vmul" ]'
+      - '[ "vmulh" ]'      
+      - '[ "vmulhu" ]'
+      - '[ "vmulhsu" ]'
+      - '[ "vdivu" ]'
+      - '[ "vdiv" ]'      
+      - '[ "vremu" ]'
+      - '[ "vrem" ]'
+      - '[ "vwmul" ]'
+      - '[ "vwmulu" ]'      
+      - '[ "vwmulsu" ]'
+      - '[ "vmacc" ]'
+      - '[ "vnmsac" ]'
+      - '[ "vmadd" ]'      
+      - '[ "vnmsub" ]'
+      - '[ "vwmaccu" ]'
+      - '[ "vwmacc" ]'
+      - '[ "vwmaccsu" ]'      
+      - '[ "vsaddu" ]'
+      - '[ "vsadd" ]'
+      - '[ "vssubu" ]'
+      - '[ "vssub" ]'      
+      - '[ "vaaddu" ]'
+      - '[ "vaadd" ]'
+      - '[ "vasubu" ]'
+      - '[ "vasub" ]'
+      - '[ "vsmul" ]'     
+      - '[ "vssrl" ]'
+      - '[ "vssra" ]'
+      - '[ "vrgather" ]'     
+      - '[ "vrgatherei16" ]'
+
+
+    test_exception_mstatus_VS_instruction_vx @ instruction:
+      - '[ "vadd" ]'
+      - '[ "vsub" ]'
+      - '[ "vrsub" ]'
+      - '[ "vwaddu" ]'
+      - '[ "vwsubu" ]'
+      - '[ "vwadd" ]'
+      - '[ "vwsub" ]'
+      - '[ "vmadc" ]'
+      - '[ "vmsbc" ]'
+      - '[ "vand" ]'
+      - '[ "vor" ]'
+      - '[ "vxor" ]'
+      - '[ "vsll" ]'
+      - '[ "vsrl" ]'
+      - '[ "vsra" ]'
+      - '[ "vmseq" ]'
+      - '[ "vmsne" ]'
+      - '[ "vmsltu" ]'
+      - '[ "vmslt" ]'
+      - '[ "vmsleu" ]'
+      - '[ "vmsle" ]'
+      - '[ "vmsgtu" ]'
+      - '[ "vmsgt" ]'
+      - '[ "vminu" ]'
+      - '[ "vmin" ]'      
+      - '[ "vmaxu" ]'
+      - '[ "vmax" ]'
+      - '[ "vmul" ]'
+      - '[ "vmulh" ]'      
+      - '[ "vmulhu" ]'
+      - '[ "vmulhsu" ]'
+      - '[ "vdivu" ]'
+      - '[ "vdiv" ]'      
+      - '[ "vremu" ]'
+      - '[ "vrem" ]'
+      - '[ "vwmul" ]'
+      - '[ "vwmulu" ]'      
+      - '[ "vwmulsu" ]'
+      - '[ "vsaddu" ]'
+      - '[ "vsadd" ]'
+      - '[ "vssubu" ]'      
+      - '[ "vssub" ]'
+      - '[ "vaaddu" ]'
+      - '[ "vaadd" ]'
+      - '[ "vasubu" ]'
+      - '[ "vasub" ]'
+      - '[ "vsmul" ]'     
+      - '[ "vssrl" ]'
+      - '[ "vssra" ]'
+      - '[ "vslideup" ]'     
+      - '[ "vslidedown" ]'
+      - '[ "vslide1up" ]'
+      - '[ "vslide1down" ]'
+      - '[ "vrgather" ]'
+
+    test_exception_mstatus_VS_instruction_vx2 @ instruction:
+      - '[ "vmacc" ]'
+      - '[ "vnmsac" ]'
+      - '[ "vmadd" ]'      
+      - '[ "vnmsub" ]'
+      - '[ "vwmaccu" ]'
+      - '[ "vwmacc" ]'
+      - '[ "vwmaccsu" ]'      
+      - '[ "vwmaccus" ]'
+
+    test_exception_mstatus_VS_instruction_vi @ instruction:
+      - '[ "vadd" ]'
+      - '[ "vrsub" ]'
+      - '[ "vmadc" ]'  
+      - '[ "vmadc" ]'
+      - '[ "vand" ]'
+      - '[ "vor" ]'
+      - '[ "vxor" ]'
+      - '[ "vsll" ]'
+      - '[ "vsrl" ]'
+      - '[ "vsra" ]'
+      - '[ "vmseq" ]'
+      - '[ "vmsne" ]'
+      - '[ "vmsleu" ]'
+      - '[ "vmsle" ]'
+      - '[ "vmsgtu" ]'
+      - '[ "vmsgt" ]'
+      - '[ "vsaddu" ]'
+      - '[ "vsadd" ]' 
+      - '[ "vssrl" ]'
+      - '[ "vssra" ]'
+      - '[ "vslideup" ]'     
+      - '[ "vslidedown" ]'
+      - '[ "vrgather" ]'
+
+    test_exception_mstatus_VS_instruction_wv @ instruction:
+      - '[ "vwaddu" ]'
+      - '[ "vwsubu" ]'
+      - '[ "vwadd" ]'
+      - '[ "vwsub" ]'  
+      - '[ "vnsrl" ]'
+      - '[ "vnsra" ]' 
+      - '[ "vnclipu" ]'
+      - '[ "vnclip" ]' 
+
+    test_exception_mstatus_VS_instruction_wx @ instruction:
+      - '[ "vwaddu" ]'
+      - '[ "vwsubu" ]'
+      - '[ "vwadd" ]'
+      - '[ "vwsub" ]'  
+      - '[ "vnsrl" ]'
+      - '[ "vnsra" ]' 
+      - '[ "vnclipu" ]'
+      - '[ "vnclip" ]' 
+
+    test_exception_mstatus_VS_instruction_wi @ instruction:
+      - '[ "vnsrl" ]'
+      - '[ "vnsra" ]'   
+      - '[ "vnclipu" ]'
+      - '[ "vnclip" ]' 
+
+    test_exception_mstatus_VS_instruction_vvm @ instruction:
+      - '[ "vadc" ]'
+      - '[ "vmadc" ]'
+      - '[ "vsbc" ]'
+      - '[ "vmsbc" ]'
+      - '[ "vmerge" ]'
+
+    test_exception_mstatus_VS_instruction_vxm @ instruction:
+      - '[ "vadc" ]'
+      - '[ "vmadc" ]'
+      - '[ "vsbc" ]'
+      - '[ "vmsbc" ]'
+      - '[ "vmerge" ]'
+
+    test_exception_mstatus_VS_instruction_vim @ instruction:
+      - '[ "vadc" ]'
+      - '[ "vmadc" ]'
+      - '[ "vmerge" ]'  
+
+    test_exception_mstatus_VS_instruction_vs @ instruction:
+      - '[ "vredsum" ]'
+      - '[ "vredmaxu" ]'
+      - '[ "vredmax" ]'
+      - '[ "vredminu" ]'
+      - '[ "vredmin" ]'
+      - '[ "vredand" ]'          
+      - '[ "vredor" ]'
+      - '[ "vredxor" ]'
+      - '[ "vwredsumu" ]'  
+      - '[ "vwredsum" ]'
+
+    test_exception_mstatus_VS_instruction_mm @ instruction:
+      - '[ "vmand" ]'
+      - '[ "vmnand" ]'
+      - '[ "vmandnot" ]'
+      - '[ "vmxor" ]'
+      - '[ "vmor" ]'
+      - '[ "vmnor" ]'          
+      - '[ "vmornot" ]'
+      - '[ "vmxnor" ]'
+
+    test_exception_mstatus_VS_instruction_vmv @ instruction, fix1, fix2, dst, s1:
+      - '[ "vmv", "v", "v", "v16", "v8" ]'
+      - '[ "vmv", "v", "x", "v16", "a1" ]'
+      - '[ "vmv", "v", "i", "v16", "10" ]'
+      - '[ "vmv", "x", "s", "a1",  "v8" ]'
+      - '[ "vmv", "s", "x", "v16", "a1" ]'
+
+    test_exception_mstatus_VS_instruction_vcompress @ instruction:
+      - '[ "vcompress" ]'
+
+    test_exception_mstatus_VS_instruction_other @ instruction, type, dst, s1:
+      - '[ "vzext", "vf2", "v16", "v8" ]'
+      - '[ "vzext", "vf4", "v16", "v8" ]'
+      - '[ "vzext", "vf8", "v16", "v8" ]'    
+      - '[ "vsext", "vf2", "v16", "v8" ]'
+      - '[ "vsext", "vf4", "v16", "v8" ]'
+      - '[ "vsext", "vf8", "v16", "v8" ]' 
+
+      - '[ "vpopc", "m", "a1",  "v8" ]'
+      - '[ "vfirst","m", "a1",  "v8" ]'
+      - '[ "vmsbf", "m", "v16", "v8" ]'
+      - '[ "vmsif", "m", "v16", "v8" ]'
+      - '[ "vmsof", "m", "v16", "v8" ]'
+      - '[ "viota", "m", "v16", "v8" ]'
+      - '[ "vid",   "v", "v16", "v0.t" ]'
+
+      - '[ "vmv1r", "v", "v16", "v8" ]'
+      - '[ "vmv2r", "v", "v16", "v8" ]'
+      - '[ "vmv4r", "v", "v16", "v8" ]'
+      - '[ "vmv8r", "v", "v16", "v8" ]'
+
+    test_exception_mstatus_VS_instruction_vsetIvli @ instruction, parm1, parm2:
+      - '[ "vsetvli",  "t0",  "a0" ]'
+      - '[ "vsetivli", "x14", "1"  ]'
+ 
+    test_exception_mstatus_VS_instruction_vsetvl @ instruction, parm1, parm2, parm3:
+      - '[ "vsetvl",  "x14",  "x1", "x2" ]'

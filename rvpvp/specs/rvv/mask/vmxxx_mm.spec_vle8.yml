@@ -1,0 +1,397 @@
+_: &default
+  env: RVTEST_RV64UV
+  head: |
+    #include "exception.h"
+    #include "test_macros_v.h"
+  
+  templates:
+    # FIXME basic
+    # FIXME fix vl calcaute
+    # FIXME fix store inst using vsm
+    test_vmxxx_mm_basic: |
+      test_{num}:
+        li TESTNUM, {num};
+
+        li a0, {vlen}/{sew};
+        vsetvli t0, a0, e{sew},m1,ta,mu;
+        vsub.vv v3, v3, v3;
+
+        li a0, {vl};
+        la a1, {vs1_data};
+        la a2, {vs2_data};
+        la a3, test_{num}_data;
+
+        vle{sew}.v  v1, (a1);
+        vle{sew}.v  v2, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        {name} v3, v2, v1;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        li a0, {vlen}/{sew};
+        vsetvli t0, a0, e{sew},m1,ta,mu;
+        vse{sew}.v  v3, (a3);
+        .pushsection .data, 1;
+        .balign 1
+      test_{num}_data:
+        .fill ({vlen}/8), 1, 0;
+        .popsection
+
+    test_vmxxx_mm_vstart: |
+      test_{num}:
+        li TESTNUM, {num};
+
+        li a0, {vlen}/{sew};
+        vsetvli t0, a0, e{sew},m1,ta,mu;
+        vsub.vv v3, v3, v3;
+
+        li a0, {vl};
+        la a1, {vs1_data};
+        la a2, {vs2_data};
+        la a3, test_{num}_data;
+
+        vl1re8.v v1, (a1);
+        vl1re8.v v2, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, {start};
+        csrw vstart, a1;
+        {name} v3, v2, v1;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs1r.v v3, (a3);
+        .pushsection .data, 1;
+        .balign 1
+      test_{num}_data:
+        .fill ({vlen}/8), 1, 0;
+        .popsection
+    
+    # FIXME 128 to {vlen}/8
+    test_vmxxx_mm_tu: |
+      test_{num}:
+        li TESTNUM, {num};
+
+        la a0, {origin_data};
+        vl1re8.v v3, (a0);
+
+        li a0, {vl};
+        la a1, {vs1_data};
+        la a2, {vs2_data};
+        la a3, test_{num}_data;
+
+        vl1re8.v v1, (a1);
+        vl1re8.v v2, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},tu,mu;
+        {name} v3, v2, v1;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs1r.v v3, (a3);
+        .pushsection .data, 1;
+        .balign 1
+      test_{num}_data:
+        .fill ({vlen}/8), 1, 0;
+        .popsection
+
+    test_vmxxx_mm_regression: |
+      test_{num}:
+        li TESTNUM, {num};
+
+        li a0, {vlen}/{sew};
+        vsetvli t0, a0, e{sew},m1,ta,mu;
+        vsub.vv {vregd}, {vregd}, {vregd};
+
+        li a0, {vl};
+        la a1, {vs1_data};
+        la a2, {vs2_data};
+        la a3, test_{num}_data;
+
+        vl1re8.v {vreg1}, (a1);
+        vl1re8.v {vreg2}, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, {start};
+        csrw vstart, a1;
+        {name} {vregd}, {vreg2}, {vreg1};
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs1r.v {vregd}, (a3);
+        .pushsection .data, 1;
+        .balign 1
+      test_{num}_data:
+        .fill ({vlen}/8), 1, 0;
+        .popsection
+
+    test_vmxxx_mm_dest_eq_vs1 : |
+      test_{num}:
+        li TESTNUM, {num};
+
+        li a0, {vl};
+        la a1, {vs1_data};
+        la a2, {vs2_data};
+        la a3, test_{num}_data;
+
+        vl1re8.v v1, (a1);
+        vl1re8.v v2, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        {name} v1, v2, v1;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs1r.v v1, (a3);
+        .pushsection .data, 1;
+        .balign 1
+      test_{num}_data:
+        .fill ({vlen}/8), 1, 0;
+        .popsection
+      
+    test_vmxxx_mm_dest_eq_vs2 : |
+      test_{num}:
+        li TESTNUM, {num};
+
+        li a0, {vl};
+        la a1, {vs1_data};
+        la a2, {vs2_data};
+        la a3, test_{num}_data;
+
+        vl1re8.v v1, (a1);
+        vl1re8.v v2, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        {name} v2, v2, v1;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs1r.v v2, (a3);
+        .pushsection .data, 1;
+        .balign 1
+      test_{num}_data:
+        .fill ({vlen}/8), 1, 0;
+        .popsection
+      
+    test_vmxxx_mm_vs2_eq_vs1 : |
+      test_{num}:
+        li TESTNUM, {num};
+
+        li a0, {vlen}/{sew};
+        vsetvli t0, a0, e{sew},m1,ta,mu;
+        vsub.vv v3, v3, v3;
+
+        li a0, {vl};
+        la a1, {vs1_data};
+        la a2, {vs2_data};
+        la a3, test_{num}_data;
+
+        vl1re8.v v1, (a1);
+        vl1re8.v v2, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        {name} v3, v1, v1;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs1r.v v3, (a3);
+        .pushsection .data, 1;
+        .balign 1
+      test_{num}_data:
+        .fill ({vlen}/8), 1, 0;
+        .popsection
+    
+    test_vmxxx_mm_vs2_eq_vs1_eq_dst : |
+      test_{num}:
+        li TESTNUM, {num};
+
+        li a0, {vl};
+        la a1, {vs1_data};
+        la a2, {vs2_data};
+        la a3, test_{num}_data;
+
+        vl1re8.v v1, (a1);
+        vl1re8.v v2, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        {name} v1, v1, v1;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs1r.v v1, (a3);
+        .pushsection .data, 1;
+        .balign 1
+      test_{num}_data:
+        .fill ({vlen}/8), 1, 0;
+        .popsection
+
+    # FIXME confirm vreg align with lmul ? no
+    test_exception_invalid_sew : |
+      test_{num}:
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sd t0, 0(t1);
+        li TESTNUM, {num};
+
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        {name} v3, v2, v1;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      test_{num}_end:
+    
+
+  basic_cases:
+    test_vmxxx_mm_basic :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs1 : np.linspace(0, 128, vlen//8, dtype=np.uint8)
+        vs2 : np.linspace(0, 256, vlen//8, dtype=np.uint8)
+
+
+  random_cases:  
+    test_vmxxx_mm_regression :
+      matrix: 
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list_ls_random(lmul, sew, sew, vlen)
+        start: vector_vstart_list_random(vl)
+        vreg1: alloc_vreg(1)
+        vreg2: alloc_vreg(1, vreg1)
+        vregd: alloc_vreg(1, [vreg1, vreg2], [1,1])
+        vs1 : np.random.uniform(0, 256, vlen//8).astype(np.uint8)
+        vs2 : np.random.uniform(0, 256, vlen//8).astype(np.uint8) 
+
+
+  cases:
+    test_vmxxx_mm_vstart :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        start: vector_vstart_list_linspace(vl)
+        vs1 : np.linspace(0, 128, vlen//8, dtype=np.uint8)
+        vs2 : np.linspace(0, 256, vlen//8, dtype=np.uint8)
+
+    test_vmxxx_mm_tu :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs1 : np.linspace(0, 128, vlen//8, dtype=np.uint8)
+        vs2 : np.linspace(0, 256, vlen//8, dtype=np.uint8)
+        origin: np.random.uniform(0, 256, vlen//8).astype(np.uint8)
+
+    test_vmxxx_mm_dest_eq_vs1 :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs1 : np.linspace(0, 128, vlen//8, dtype=np.uint8)
+        vs2 : np.linspace(0, 256, vlen//8, dtype=np.uint8)
+        dst : 0
+
+    test_vmxxx_mm_dest_eq_vs2 :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs1 : np.linspace(0, 128, vlen//8, dtype=np.uint8)
+        vs2 : np.linspace(0, 256, vlen//8, dtype=np.uint8)
+        dst : 1
+
+    test_vmxxx_mm_vs2_eq_vs1 :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs1 : np.linspace(0, 256, vlen//8, dtype=np.uint8)
+        vs2 : vs1
+
+    test_vmxxx_mm_vs2_eq_vs1_eq_dst :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs1 : np.linspace(0, 128, vlen//8, dtype=np.uint8)
+        vs2 : vs1
+        dst : 2
+     
+    test_exception_invalid_sew @ vs2, vs1, vl, lmul, sew, vlen : 
+      - '[np.array([0x01], dtype=np.uint8), np.array([0x01], dtype=np.uint8), 1, 1, 128, vlen ]'
+      - '[np.array([0x01], dtype=np.uint8), np.array([0x01], dtype=np.uint8), 1, 1, 256, vlen ]'
+     
+
+  rule: co_verification
+  rule_params:
+    test_vmxxx_mm_basic: np.array_equal(result, golden)
+    test_vmxxx_mm_vstart: np.array_equal(result, golden)
+    test_vmxxx_mm_tu: np.array_equal(result, golden)
+    test_vmxxx_mm_dest_eq_vs1 : np.array_equal(result, golden)
+    test_vmxxx_mm_dest_eq_vs2 : np.array_equal(result, golden)
+    test_vmxxx_mm_vs2_eq_vs1 : np.array_equal(result, golden)
+    test_vmxxx_mm_vs2_eq_vs1_eq_dst : np.array_equal(result, golden)
+    test_vmxxx_mm_regression: np.array_equal(result, golden)
+    
+
+vmand_mm:
+  <<: *default
+
+vmnand_mm:
+  <<: *default
+
+vmandnot_mm:
+  <<: *default
+
+vmxor_mm:
+  <<: *default
+
+vmor_mm:
+  <<: *default
+
+vmnor_mm:
+  <<: *default
+
+vmornot_mm:
+  <<: *default
+
+vmxnor_mm:
+  <<: *default

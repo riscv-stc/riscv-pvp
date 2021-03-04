@@ -1,0 +1,368 @@
+_: &default
+  env: RVTEST_RV64UV
+  head: |
+    #include "exception.h"
+    #include "test_macros_v.h"
+  
+  templates:
+    test_basic_without_mask: |
+      test_{num}:
+        li TESTNUM, {num};
+        la a3, test_{num}_data;
+
+        li a0, {vlen}*8/{sew};
+        vsetvli t0, a0, e{sew},m8,ta,mu;
+        vsub.vv v8, v8, v8;
+
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        {name} v8;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs8r.v v8, (a3);
+        .pushsection .data, 1;
+        .balign {sew}/8
+      test_{num}_data:
+        .fill ({vlen}*8/{sew}), ({sew} / 8), 0;
+        .popsection
+
+    # FIXME add lmul < 1 and check m8
+    test_tu_without_mask: |
+      test_{num}:
+        li TESTNUM, {num};
+        la a3, test_{num}_data;
+
+        la a1, {origin_data}
+        vl8re{sew}.v v8, (a1);
+
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},tu,mu;
+        {name} v8;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs8r.v v8, (a3);
+        .pushsection .data, 1;
+        .balign {sew}/8
+      test_{num}_data:
+        .fill ({vlen}*8/{sew}), ({sew} / 8), 0;
+        .popsection
+    
+    # FIXME add vstart != 0
+    test_regression_without_mask: |
+      test_{num}:
+        li TESTNUM, {num};
+        la a3, test_{num}_data;
+
+        li a0, {vlen}*8/{sew};
+        vsetvli t0, a0, e{sew},m8,ta,mu;
+        vsub.vv v8, v8, v8;
+
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a2, {start};
+        csrw vstart, a2;
+        {name} v8;
+        
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs8r.v v8, (a3);
+        .pushsection .data, 1;
+        .balign {sew}/8
+      test_{num}_data:
+        .fill ({vlen}*8/{sew}), ({sew} / 8), 0;
+        .popsection
+
+    test_dst_eq_v0_without_mask: |
+      test_{num}:
+        li TESTNUM, {num};
+        la a3, test_{num}_data;
+
+        li a0, {vlen}*8/{sew};
+        vsetvli t0, a0, e{sew},m8,ta,mu;
+        vsub.vv v0, v0, v0;
+
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        {name} v0;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs8r.v v0, (a3);
+        .pushsection .data, 1;
+        .balign {sew}/8
+      test_{num}_data:
+        .fill ({vlen}*8/{sew}), ({sew} / 8), 0;
+        .popsection
+
+    test_vstart_without_mask: |
+      test_{num}:
+        li TESTNUM, {num};
+        la a3, test_{num}_data;
+
+        li a0, {vlen}*8/{sew};
+        vsetvli t0, a0, e{sew},m8,ta,mu;
+        vsub.vv v8, v8, v8;
+
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a2, {start};
+        csrw vstart, a2;
+        {name} v8;
+        
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs8r.v v8, (a3);
+        .pushsection .data, 1;
+        .balign {sew}/8
+      test_{num}_data:
+        .fill ({vlen}*8/{sew}), ({sew} / 8), 0;
+        .popsection
+
+    test_basic_with_mask: |
+      test_{num}:
+        li TESTNUM, {num};
+        la a3, test_{num}_data;
+        la a4, {mask_data};
+
+        li a0, {vlen}*8/{sew};
+        vsetvli t0, a0, e{sew},m8,ta,mu;
+        vsub.vv v8, v8, v8;
+
+        vl1re8.v v0, (a4);
+
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        {name} v8, v0.t;
+        
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs8r.v v8, (a3);
+        .pushsection .data, 1;
+        .balign {sew}/8
+      test_{num}_data:
+        .fill ({vlen}*8/{sew}), ({sew} / 8), 0;
+        .popsection
+
+    test_tu_with_mask: |
+      test_{num}:
+        li TESTNUM, {num};
+        la a3, test_{num}_data;
+        la a4, {mask_data};
+
+        la a1, {origin_data}
+        vl8re{sew}.v v8, (a1);
+
+        vl1re8.v v0, (a4);
+
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},tu,mu;
+        {name} v8, v0.t;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs8r.v v8, (a3);
+        .pushsection .data, 1;
+        .balign {sew}/8
+      test_{num}_data:
+        .fill ({vlen}*8/{sew}), ({sew} / 8), 0;
+        .popsection
+
+    # FIXME add vstart!=0
+    test_regression_with_mask: |
+      test_{num}:
+        li TESTNUM, {num};
+        la a3, test_{num}_data;
+        la a4, {mask_data};
+
+        li a0, {vlen}*8/{sew};
+        vsetvli t0, a0, e{sew},m8,ta,mu;
+        vsub.vv v8, v8, v8;
+
+        vl1re8.v v0, (a4);
+
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a2, {start};
+        csrw vstart, a2;
+        {name} v8, v0.t;
+        
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs8r.v v8, (a3);
+        .pushsection .data, 1;
+        .balign {sew}/8
+      test_{num}_data:
+        .fill ({vlen}*8/{sew}), ({sew} / 8), 0;
+        .popsection
+
+    test_vstart_with_mask: |
+      test_{num}:
+        li TESTNUM, {num};
+        la a3, test_{num}_data;
+        la a4, {mask_data};
+
+        li a0, {vlen}*8/{sew};
+        vsetvli t0, a0, e{sew},m8,ta,mu;
+        vsub.vv v8, v8, v8;
+
+        vl1re8.v v0, (a4);
+
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a2, {start};
+        csrw vstart, a2;
+        {name} v8, v0.t;
+        
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        vs8r.v v8, (a3);
+        .pushsection .data, 1;
+        .balign {sew}/8
+      test_{num}_data:
+        .fill ({vlen}*8/{sew}), ({sew} / 8), 0;
+        .popsection
+
+    # FIXME delete vstart
+    test_exception: |
+      test_{num}:
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sd t0, 0(t1);
+        li TESTNUM, {num};
+
+        li a0, {vl};
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        {name} v3;
+      test_{num}_end:
+
+
+  basic_cases:
+    test_basic_without_mask :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+
+    test_basic_with_mask :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        mask: vector_mask_array_random(vlen)
+
+
+  random_cases:
+    test_regression_without_mask :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list_ls_random(lmul, sew, sew, vlen)
+        start: vector_vstart_list_random(vl)
+
+    test_regression_with_mask :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list_ls_random(lmul, sew, sew, vlen)
+        start: vector_vstart_list_random(vl)
+        mask: vector_mask_array_random(vlen)
+
+
+  cases:    
+    test_tu_without_mask :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        origin: np.random.uniform(0, 2**sew, vlen*8//sew).astype(bits_to_dtype_uint(sew))
+     
+    test_dst_eq_v0_without_mask :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+
+    test_vstart_without_mask :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        start: vector_vstart_list_linspace(vl)
+ 
+    test_tu_with_mask :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        mask: vector_mask_array_random(vlen)
+        origin: np.random.uniform(0, 2**sew, vlen*8//sew).astype(bits_to_dtype_uint(sew))
+
+    test_vstart_with_mask :
+      matrix:
+        vlen: vlen
+        sew : vector_sew_list(elen)
+        lmul: vector_lmul_list(sew, elen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        start: vector_vstart_list_linspace(vl)
+        mask: vector_mask_array_random(vlen)
+
+    test_exception @ vl, lmul, sew, vlen:
+      - '[1,    1, 128, vlen]'
+      - '[1,    1,   8, vlen]'
+      - '[1,    2,   8, vlen]'
+  
+  
+  rule: co_verification      
+  rule_params:
+    test_basic_without_mask: np.array_equal(result, golden)
+    test_tu_without_mask: np.array_equal(result, golden)
+    test_regression_without_mask: np.array_equal(result, golden)
+    test_dst_eq_v0_without_mask: np.array_equal(result, golden)
+    test_vstart_without_mask: np.array_equal(result, golden)
+    test_basic_with_mask: np.array_equal(result, golden)
+    test_tu_with_mask: np.array_equal(result, golden)
+    test_regression_with_mask: np.array_equal(result, golden)
+    test_vstart_with_mask: np.array_equal(result, golden)
+
+vid_v:
+  <<: *default

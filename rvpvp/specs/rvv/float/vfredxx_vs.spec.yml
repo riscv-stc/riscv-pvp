@@ -1,0 +1,584 @@
+_: &default
+  head: |
+    #include "exception.h"
+  env: RVTEST_RV64UV
+  templates:
+    test_basic_without_mask: |
+      test_{num}: 
+        li TESTNUM, {num};   // {num} set automatically
+        li t0, 4;
+        fsrm t1, t0;         // set rounding mode as RMM
+        li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a1, {vs1_data} ;  // vs1 data label
+        vle{sew}.v v8, (a1) ; 
+        li a0, {vl} ; 
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a2, {vs2_data} ;  // vs2 data label
+        vle{sew}.v v16, (a2) ;
+        li t0, 0;
+        csrw vstart, t0;      // set vstart as 0
+        {name} v24, v16, v8;  // {name} is the test instruction
+        csrr t0, vstart;
+        beqz t0, 1f;          // test if vstart==0 after the instruction
+        j fail;
+      1:li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a3, test_{num}_data; 
+        vse{sew}.v v24, (a3);    // save the result data into test_{num}_data memory
+        .pushsection .data, 1;
+        .balign  ({sew}/8)        
+      test_{num}_data:
+        .fill 1, ({sew}/8), 0;  // there are 1 sets of ({sew}/8) bytes 0
+        .popsection
+
+    test_vl_eq_zero_without_mask: |
+      test_{num}: 
+        li TESTNUM, {num};   // {num} set automatically
+        li t0, 4;
+        fsrm t1, t0;         // set rounding mode as RMM
+        li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a1, {vs1_data} ;  // vs1 data label
+        vle{sew}.v v8, (a1) ;
+        vmv.v.i v24, 0 
+        li a0, {vl} ; 
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        li t0, 0;
+        csrw vstart, t0;      // set vstart as 0
+        {name} v24, v16, v8;  // {name} is the test instruction
+        csrr t0, vstart;
+        beqz t0, 1f;          // test if vstart==0 after the instruction
+        j fail;
+      1:li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a3, test_{num}_data; 
+        vse{sew}.v v24, (a3);    // save the result data into test_{num}_data memory
+        .pushsection .data, 1;
+        .balign  ({sew}/8)        
+      test_{num}_data:
+        .fill 1, ({sew}/8), 0;  // there are 1 sets of ({sew}/8) bytes 0
+        .popsection        
+
+
+    test_special_without_mask: |
+      test_{num}: 
+        li TESTNUM, {num};   // {num} set automatically
+        li t0, 4;
+        fsrm t1, t0;         // set rounding mode as RMM
+        li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a1, {vs1_data} ;  // vs1 data label
+        vle{sew}.v v8, (a1) ; 
+        li a0, {vl} ; 
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a2, {vs2_data} ;  // vs2 data label
+        vle{sew}.v v16, (a2) ;
+        li t0, 0;
+        csrw vstart, t0;      // set vstart as 0
+        {name} v24, v16, v8;  // {name} is the test instruction
+        csrr t0, vstart;
+        beqz t0, 1f;          // test if vstart==0 after the instruction
+        j fail;
+      1:li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a3, test_{num}_data; 
+        vse{sew}.v v24, (a3);    // save the result data into test_{num}_data memory
+        .pushsection .data, 1;
+        .balign  ({sew}/8)        
+      test_{num}_data:
+        .fill 1, ({sew}/8), 0;  // there are 1 sets of ({sew}/8) bytes 0
+        .popsection  
+
+    test_vta_eq_tu_without_mask: |   
+      test_{num}: 
+        li TESTNUM, {num}; // {num} set automatically            
+        li t0, 4;
+        fsrm t1, t0;      //set rounding mode as RMM 
+        li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a1, {vs1_data} ;  // vs1 data label
+        vle{sew}.v v8, (a1) ;        
+        li a0, {orig_shape[0]};
+        vsetvli t0, a0, e{sew},m1,ta,ma;        
+        la a3, {orig_data}; // original data label of target register        
+        vle{sew}.v v24, (a3);                            
+        li a0, {vs2_shape[0]} ; // vl of source data = (vlmax, VLEN/SEW)
+        vsetvli t0, a0, e{sew},m{lmul_tail},ta,ma;
+        la a2, {vs2_data} ; // vs2 data label
+        vle{sew}.v v16, (a2) ;
+        li a0, {vl} ;       // set vl of test instruction
+        vsetvli t0, a0, e{sew},m{lmul},tu,ma;
+        li t0, 0;
+        csrw vstart, t0;    // set vstart as 0
+        {name} v24, v16, v8 ; // {name} is the test instruction            
+      1:li a0, {orig_shape[0]};
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a3, test_{num}_data; 
+        vse{sew}.v v24, (a3);    // save the result data into test_{num}_data memory
+        .pushsection .data, 1;
+        .balign  ({sew}/8)        
+      test_{num}_data:
+        .fill {orig_shape[0]}, ({sew}/8), 0;  // there are 1 sets of ({sew}/8) bytes 0
+        .popsection  
+
+    test_rounding_mode_without_mask: |   
+      test_{num}: 
+        li TESTNUM, {num};   // {num} set automatically
+        li t0, {frm};
+        fsrm t1, t0;         // set rounding mode 
+        li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a1, {vs1_data} ;  // vs1 data label
+        vle{sew}.v v8, (a1) ;         
+        li a0, {vl} ; 
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a2, {vs2_data} ;  // vs2 data label
+        vle{sew}.v v16, (a2) ;
+        li t0, 0;
+        csrw vstart, t0;      // set vstart as 0
+        {name} v24, v16, v8;  // {name} is the test instruction
+        csrr t0, vstart;
+        beqz t0, 1f;          // test if vstart==0 after the instruction
+        j fail;
+      1:li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a3, test_{num}_data; 
+        vse{sew}.v v24, (a3);    // save the result data into test_{num}_data memory
+        .pushsection .data, 1;
+        .balign  ({sew}/8)        
+      test_{num}_data:
+        .fill 1, ({sew}/8), 0;  // there are 1 sets of ({sew}/8) bytes 0
+        .popsection
+
+    test_vs1_eq_vs2_without_mask: |  
+      test_{num}: 
+        li TESTNUM, {num};   // {num} set automatically
+        li t0, 4;
+        fsrm t1, t0;         // set rounding mode as RMM
+        li a0, {vl} ; 
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a1, {vs1_data} ;  // vs1 data label
+        vle{sew}.v {vs1_name}, (a1) ; 
+        li t0, 0;
+        csrw vstart, t0;      // set vstart as 0
+        {name} {vd_name}, {vs1_name}, {vs1_name};  // {name} is the test instruction
+        csrr t0, vstart;
+        beqz t0, 1f;          // test if vstart==0 after the instruction
+        j fail;
+      1:li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a3, test_{num}_data; 
+        vse{sew}.v {vd_name}, (a3);    // save the result data into test_{num}_data memory
+        .pushsection .data, 1;
+        .balign  ({sew}/8)        
+      test_{num}_data:
+        .fill 1, ({sew}/8), 0;  // there are 1 sets of ({sew}/8) bytes 0
+        .popsection   
+    test_dest_eq_vs1_without_mask : | 
+      test_{num}: 
+        li TESTNUM, {num};   // {num} set automatically
+        li t0, 4;
+        fsrm t1, t0;         // set rounding mode as RMM
+        li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a1, {vs1_data} ;  // vs1 data label
+        vle{sew}.v {vs1_name}, (a1) ;       
+        li a0, {vl} ; 
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a2, {vs2_data} ;  // vs2 data label
+        vle{sew}.v {vs2_name}, (a2) ;
+        li t0, 0;
+        csrw vstart, t0;      // set vstart as 0
+        {name} {vs1_name}, {vs2_name}, {vs1_name};  // {name} is the test instruction
+        csrr t0, vstart;
+        beqz t0, 1f;          // test if vstart==0 after the instruction
+        j fail;
+      1:li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a3, test_{num}_data; 
+        vse{sew}.v {vs1_name}, (a3);    // save the result data into test_{num}_data memory
+        .pushsection .data, 1;
+        .balign  ({sew}/8)        
+      test_{num}_data:
+        .fill 1, ({sew}/8), 0;  // there are 1 sets of ({sew}/8) bytes 0
+        .popsection        
+                
+    test_dest_eq_vs2_without_mask: |  
+      test_{num}: 
+        li TESTNUM, {num};   // {num} set automatically
+        li t0, 4;
+        fsrm t1, t0;         // set rounding mode as RMM
+        li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a1, {vs1_data} ;  // vs1 data label
+        vle{sew}.v {vs1_name}, (a1) ;       
+        li a0, {vl} ; 
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a2, {vs2_data} ;  // vs2 data label
+        vle{sew}.v {vs2_name}, (a2) ;
+        li t0, 0;
+        csrw vstart, t0;      // set vstart as 0
+        {name} {vs2_name}, {vs2_name}, {vs1_name};  // {name} is the test instruction
+        csrr t0, vstart;
+        beqz t0, 1f;          // test if vstart==0 after the instruction
+        j fail;
+      1:li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a3, test_{num}_data; 
+        vse{sew}.v {vs2_name}, (a3);    // save the result data into test_{num}_data memory
+        .pushsection .data, 1;
+        .balign  ({sew}/8)        
+      test_{num}_data:
+        .fill 1, ({sew}/8), 0;  // there are 1 sets of ({sew}/8) bytes 0
+        .popsection     
+
+    test_dest_eq_vs1vs2_without_mask: |   
+      test_{num}: 
+        li TESTNUM, {num};   // {num} set automatically
+        li t0, 4;
+        fsrm t1, t0;         // set rounding mode as RMM
+        li a0, {vl} ; 
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a1, {vs1_data} ;  // vs1 data label
+        vle{sew}.v {vs1_name}, (a1) ; 
+        li t0, 0;
+        csrw vstart, t0;      // set vstart as 0
+        {name} {vs1_name}, {vs1_name}, {vs1_name};  // {name} is the test instruction
+        csrr t0, vstart;
+        beqz t0, 1f;          // test if vstart==0 after the instruction
+        j fail;
+      1:li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a3, test_{num}_data; 
+        vse{sew}.v {vs1_name}, (a3);    // save the result data into test_{num}_data memory
+        .pushsection .data, 1;
+        .balign  ({sew}/8)        
+      test_{num}_data:
+        .fill 1, ({sew}/8), 0;  // there are 1 sets of ({sew}/8) bytes 0
+        .popsection
+
+    test_basic_with_mask: |
+      test_{num}:
+        li TESTNUM, {num}; // num set automatically            
+        li t0, 4;
+        fsrm t1, t0;      //set rounding mode as RMM            
+        li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a1, {vs1_data} ;  // vs1 data label
+        vle{sew}.v v8, (a1) ; 
+        li a0, {vl} ; 
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a2, {vs2_data} ;  // vs2 data label
+        vle{sew}.v v16, (a2) ;       
+        la a0, {mask_data} ;//v0 data label
+        vle1.v v0, (a0);
+        li t0, 0;
+        csrw vstart, t0; //set vstart as 0 
+        {name} {vd_name}, v16, v8, v0.t ; // name is the test instruction
+        csrr t0, vstart;
+        beqz t0, 1f;    // test if vstart==0 after the instruction
+        j fail;              
+      1:li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a3, test_{num}_data; 
+        vse{sew}.v {vd_name}, (a3);    // save the result data into test_{num}_data memory
+        .pushsection .data, 1;
+        .balign  ({sew}/8)        
+      test_{num}_data:
+        .fill 1, ({sew}/8), 0;  // there are 1 sets of ({sew}/8) bytes 0
+        .popsection
+
+    test_basic_with_mask_mu: |
+      test_{num}:
+        li TESTNUM, {num}; // num set automatically            
+        li t0, 4;
+        fsrm t1, t0;      //set rounding mode as RMM            
+        li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a1, {vs1_data} ;  // vs1 data label
+        vle{sew}.v v8, (a1) ; 
+        li a0, {vl} ; 
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        la a2, {vs2_data} ;  // vs2 data label
+        vle{sew}.v v16, (a2) ;       
+        la a0, {mask_data} ;//v0 data label
+        vle1.v v0, (a0);
+        li t0, 0;
+        csrw vstart, t0; //set vstart as 0 
+        {name} {vd_name}, v16, v8, v0.t ; // name is the test instruction
+        csrr t0, vstart;
+        beqz t0, 1f;    // test if vstart==0 after the instruction
+        j fail;              
+      1:li a0, 1;
+        vsetvli t0, a0, e{sew},m1,ta,ma;
+        la a3, test_{num}_data; 
+        vse{sew}.v {vd_name}, (a3);    // save the result data into test_{num}_data memory
+        .pushsection .data, 1;
+        .balign  ({sew}/8)        
+      test_{num}_data:
+        .fill 1, ({sew}/8), 0;  // there are 1 sets of ({sew}/8) bytes 0
+        .popsection
+
+    test_exception_vstart_not_eq_zero_without_mask: | 
+      test_{num}: 
+        li TESTNUM, {num}; // {num} set automatically            
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);          
+        li a0, {vl};     //vl
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        li t0, {vstart};
+        csrw vstart, t0;      // set vstart        
+        {name} v24, v16, v8 ; // {name} is the test instruction
+        j fail;
+      test_{num}_end:      
+      
+    test_exception_wrong_sew_without_mask: |
+      test_{num}: 
+        li TESTNUM, {num}; // {num} set automatically            
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);          
+        li a0, {vl} ;     //vl
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        {name} v24, v16, v8 ; // {name} is the test instruction
+        j fail;
+      test_{num}_end:
+    test_exception_lmul_vreg_no_without_mask: |
+      test_{num}: 
+        li TESTNUM, {num}; // {num} set automatically              
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);       
+        li a0, {vl} ;     // vl
+        vsetvli t0, a0, e{sew},m{lmul},tu,mu;
+        {name} {vd_name}, {vs2_name}, {vs1_name} ; // {name} is the test instruction
+        j fail;
+      test_{num}_end:
+    test_exception_wrong_lmul_without_mask: |
+      test_{num}: 
+        li TESTNUM, {num}; // {num} set automatically            
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sw t0, 0(t1);          
+        li a0, 1 ;     //vl
+        vsetvli t0, a0, e{sew},m{lmul},ta,ma;
+        {name} v24, v16, v8 ; // {name} is the test instruction
+        j fail;
+      test_{num}_end: 
+
+  basic_cases:
+    test_basic_without_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_lmul_list(sew, flen)
+        vl  : np.random.randint(1, vector_vlmax(lmul, sew, vlen) + 1)
+        vs1 : scalar_float_random(sew, 1)
+        vs2 : np.linspace(-300, 500, vl).astype(bits_to_dtype_float(sew))  
+    test_basic_with_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_lmul_list(sew, flen)
+        vl  : np.random.randint(1, vector_vlmax(lmul, sew, vlen) + 1)
+        mask: vector_mask_array_random(vl)
+        vs1 : scalar_float_random(sew, 1)
+        vs2 : np.linspace(-300, 500, int(vl)).astype(bits_to_dtype_float(sew))
+        vd_name: v24      
+
+  cases:
+    test_basic_without_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_lmul_list(sew, flen)
+        vl  : vector_vl_list(lmul, sew, vlen)
+        vs1 : scalar_float_random(sew, 1)
+        vs2 : np.linspace(-300, 500, vl).astype(bits_to_dtype_float(sew))
+
+    test_vl_eq_zero_without_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_lmul_list(sew, flen)
+        vl  : 0 
+        vs1 : scalar_float_random(sew, 1)
+   
+    test_special_without_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: 1
+        vl  : 1
+        vs1 : scalar_float_list_special(sew)
+        vs2 : scalar_float_list_special(sew)
+
+    test_vta_eq_tu_without_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_lmul_list(sew, flen)
+        lmul_tail: 1 if isinstance(lmul,str) else lmul
+        vl  : list(np.random.choice( vector_vl_list(lmul, sew, vlen), 1))
+        vs1 : scalar_float_random(sew, 1)
+        vs2 : np.linspace(-300, 500, vector_len_vreg_aligned(lmul, sew, vlen)).astype(bits_to_dtype_float(sew)) 
+        orig: np.linspace(-400, 400, vector_vlmax(1, sew, vlen)).astype(bits_to_dtype_float(sew))       
+
+    test_rounding_mode_without_mask:
+      matrix:
+        frm: [ 0, 1, 2, 3]
+        sew : vector_sew_list_f(flen)
+        lmul: list(np.random.choice( vector_lmul_list(sew, flen), 1 ))
+        vl  : np.random.randint(1, vector_vlmax(lmul, sew, vlen) + 1)
+        vs1 : scalar_float_random(sew, 1)
+        vs2 : np.linspace(-300, 500, int(vl)).astype(bits_to_dtype_float(sew)) 
+
+    test_vs1_eq_vs2_without_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_lmul_list(sew, flen)
+        vl  : np.random.randint(1, vector_vlmax(lmul, sew, vlen) + 1)
+        vs1 : np.linspace(-500, 300, int(vl)).astype(bits_to_dtype_float(sew))
+        vs2 : vs1
+        vs1_name: alloc_vreg( lmul )
+        vd_name: alloc_vreg( 1, vs1_name )
+
+    test_dest_eq_vs1_without_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_lmul_list(sew, flen)
+        vl  : np.random.randint(1, vector_vlmax(lmul, sew, vlen) + 1)
+        vs1 : scalar_float_random(sew, 1)
+        vs2 : np.linspace(-300, 500, int(vl)).astype(bits_to_dtype_float(sew))
+        vs1_name: alloc_vreg( 1 )
+        vs2_name: alloc_vreg( lmul, vs1_name )
+
+      
+    test_dest_eq_vs2_without_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_lmul_list(sew, flen)
+        vl  : np.random.randint(1, vector_vlmax(lmul, sew, vlen) + 1)
+        vs1 : scalar_float_random(sew, 1)
+        vs2 : np.linspace(-300, 500, int(vl)).astype(bits_to_dtype_float(sew))
+        vs1_name: alloc_vreg( 1 )
+        vs2_name: alloc_vreg( lmul, vs1_name )    
+    
+    test_dest_eq_vs1vs2_without_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_lmul_list(sew, flen)
+        vl  : np.random.randint(1, vector_vlmax(lmul, sew, vlen) + 1)
+        vs1 : np.linspace(-500, 300, int(vl)).astype(bits_to_dtype_float(sew))
+        vs2 : vs1
+        vs1_name: alloc_vreg( lmul )
+
+    test_basic_with_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_lmul_list(sew, flen)
+        vl  : np.random.randint(1, vector_vlmax(lmul, sew, vlen) + 1)
+        mask: "[ vector_mask_array_random(vl), vector_mask_array_zero(vl) ]"
+        vs1 : scalar_float_random(sew, 1)
+        vs2 : np.linspace(-300, 500, int(vl)).astype(bits_to_dtype_float(sew))
+        vd_name: [ v24, v0]
+      
+    test_basic_with_mask_mu:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_lmul_list(sew, flen)
+        vl  : np.random.randint(1, vector_vlmax(lmul, sew, vlen) + 1)
+        mask: "[ vector_mask_array_random(vl), vector_mask_array_zero(vl) ]"
+        vs1 : scalar_float_random(sew, 1)
+        vs2 : np.linspace(-300, 500, int(vl)).astype(bits_to_dtype_float(sew))   
+        vd_name: [ v24, v0]
+      
+    test_exception_vstart_not_eq_zero_without_mask @ sew, lmul, vl, vstart:
+      - [ 16, 2, 35, 4 ]
+      - [ 32, 4, 77, 33]
+      - [ 64, 1, 15, 7 ]
+
+    test_exception_wrong_sew_without_mask  @ sew, lmul, vl  :
+      - [ 8, 1, 50 ]
+      - [ 8, 4, 200 ] 
+      - [ 8, "f2", 15 ]
+      - [ 128, 1, 3 ]
+      - [ 128, 2, 10 ]
+      - [ 128, 4, 20 ]
+      - [ 256, 1, 2 ]
+      - [ 256, 4, 10 ]
+      - [ 256, 8, 25 ]
+      - [ 512, 2, 2 ]
+      - [ 512, 4, 5 ]
+      - [ 512, 8, 11 ]
+      - [ 1024, 1, 1 ]
+      - [ 1024, 4, 3 ]
+      - [ 1024, 8, 5 ]
+    test_exception_lmul_vreg_no_without_mask  @ sew, lmul, vl, vs1_name, vs2_name, vd_name:
+      - [ 32, 2, 35, "v1", "v3", "v5" ]
+      - [ 64, 2, 15, "v6", "v17", "v11" ]
+      - [ 64, 4, 30, "v3", "v7", "v8" ]
+      - [ 16, 4, 77, "v12", "v15", "v20" ]
+      - [ 32, 8, 111, "v7", "v9", "v16" ]
+      - [ 16, 8, 201, "v16", "v25", "v24" ]
+    test_exception_wrong_lmul_without_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: vector_illegal_lmul(sew)      
+
+
+  random_cases:
+    test_basic_without_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: 1
+        vl  : np.random.randint(1, vector_vlmax(lmul, sew, vlen) + 1)
+        vs1 : scalar_float_random(sew, 1)
+        vs2 : scalar_float_random(sew, vl)
+    test_basic_with_mask:
+      matrix:
+        sew : vector_sew_list_f(flen)
+        lmul: 1
+        vl  : np.random.randint(1, vector_vlmax(lmul, sew, vlen) + 1)
+        mask: vector_mask_array_random(vl)
+        vs1 : scalar_float_random(sew, 1)
+        vs2 : scalar_float_random(sew, vl)
+        vd_name: alloc_vreg( 1 )
+   
+  rule: co_verification
+  rule_params:
+    test_basic_without_mask: np.allclose( result, golden, rtol=3e-2, atol=1e-5, equal_nan=True) 
+    test_vl_eq_zero_without_mask: np.allclose( result, golden, rtol=3e-2, atol=1e-5, equal_nan=True)     
+    test_special_without_mask: np.allclose( result, golden, rtol=3e-2, atol=1e-5, equal_nan=True) 
+    test_vta_eq_tu_without_mask: np.allclose( result, golden, rtol=3e-2, atol=1e-5, equal_nan=True) 
+    test_rounding_mode_without_mask: np.allclose( result, golden, rtol=6e-2, atol=1e-5, equal_nan=True)
+    test_vs1_eq_vs2_without_mask: np.allclose( result, golden, rtol=3e-2, atol=1e-5, equal_nan=True)
+    test_dest_eq_vs1_without_mask: np.allclose( result, golden, rtol=3e-2, atol=1e-5, equal_nan=True)    
+    test_dest_eq_vs2_without_mask: np.allclose( result, golden, rtol=3e-2, atol=1e-5, equal_nan=True)
+    test_dest_eq_vs1vs2_without_mask: np.allclose( result, golden, rtol=3e-2, atol=1e-5, equal_nan=True)
+    test_basic_with_mask: np.allclose( result, golden, rtol=3e-2, atol=1e-5, equal_nan=True)
+    test_basic_with_mask_mu: np.allclose( result, golden, rtol=3e-2, atol=1e-5, equal_nan=True)
+
+  
+
+
+vfredosum_vs:
+  <<: *default
+
+vfredusum_vs:
+  <<: *default
+
+vfredmax_vs:
+  <<: *default
+
+vfredmin_vs:
+  <<: *default
+        

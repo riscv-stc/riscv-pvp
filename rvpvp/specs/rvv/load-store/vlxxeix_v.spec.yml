@@ -1,0 +1,1076 @@
+_: &default
+  head: |
+    #undef EXTRA_INIT
+    #define EXTRA_INIT                               \
+      /* Set up a PMP to permit all accesses */      \
+      li t0, 0xd8000000;                             \
+      srli t0, t0, 2;                                \
+      csrw pmpaddr0, t0;                             \
+      li t0, PMP_TOR | PMP_R | PMP_W | PMP_X;        \
+      csrw pmpcfg0, t0; 
+    #include "exception.h"
+    #include "test_macros_v.h"
+    #define ST_ADDR 0x90000000
+    #define END_ADDR 0xC0000000
+  env: RVTEST_RV64UV
+  templates:
+    test_basic_without_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_eew_neq_sew_without_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_vstart_without_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, {start};
+        csrw vstart, a1;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_tu_without_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, {vlen}*8/{sew};
+        la a4, {origin_data}
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vle{sew}.v v16, (a4);
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},tu,mu;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vlen}*8/{sew};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vlen}*8/{sew}), ({sew}/8), 0;
+        .popsection
+
+    test_misalign_without_mask: |
+      test_{num}:
+        li t0, CAUSE_MISALIGNED_LOAD;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sd t0, 0(t1);
+
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, ST_ADDR;
+        addi a1, a1, {offset};
+        vl{order}xei{eew}.v v16, (a1), v8;
+        li a4, {isExcept}
+        beqz a4, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        csrr a0, vstart;
+        beqz a0, 22f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      22:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+      test_{num}_end:
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_misalign_index_without_mask: |
+      test_{num}:
+        li t0, CAUSE_MISALIGNED_LOAD;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sd t0, 0(t1);
+
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8;
+        li a4, {isExcept}
+        beqz a4, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        csrr a0, vstart;
+        beqz a0, 22f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      22:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+      test_{num}_end:
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_vd_eq_vs2_without_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v8, (a1), v8;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v8, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_regression_without_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, {start};
+        csrw vstart, a1;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+
+    test_basic_with_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, ({vl}+7)/8;
+        la a4, {mask_data};
+        vsetvli t0, a3, e8,m1,ta,mu;
+        vle8.v v0, (a4);
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8, v0.t;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_eew_neq_sew_with_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, ({vl}+7)/8;
+        la a4, {mask_data};
+        vsetvli t0, a3, e8,m1,ta,mu;
+        vle8.v v0, (a4);
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8, v0.t;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_vstart_with_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, ({vl}+7)/8;
+        la a4, {mask_data};
+        vsetvli t0, a3, e8,m1,ta,mu;
+        vle8.v v0, (a4);
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, {start};
+        csrw vstart, a1;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8, v0.t;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_tu_with_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, ({vl}+7)/8;
+        la a4, {mask_data};
+        vsetvli t0, a3, e8,m1,ta,mu;
+        vle8.v v0, (a4);
+
+        li a3, {vlen}*8/{sew};
+        la a4, {origin_data}
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vle{sew}.v v16, (a4);
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},tu,mu;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8, v0.t;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vlen}*8/{sew};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vlen}*8/{sew}), ({sew}/8), 0;
+        .popsection
+
+    test_misalign_with_mask: |
+      test_{num}:
+        li t0, CAUSE_MISALIGNED_LOAD;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sd t0, 0(t1);
+
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, ({vl}+7)/8;
+        la a4, {mask_data};
+        vsetvli t0, a3, e8,m1,ta,mu;
+        vle8.v v0, (a4);
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, ST_ADDR;
+        addi a1, a1, {offset};
+        vl{order}xei{eew}.v v16, (a1), v8, v0.t;
+        li a4, {isExcept}
+        beqz a4, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        csrr a0, vstart;
+        beqz a0, 22f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      22:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+      test_{num}_end:
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_misalign_index_with_mask: |
+      test_{num}:
+        li t0, CAUSE_MISALIGNED_LOAD;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sd t0, 0(t1);
+
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, ({vl}+7)/8;
+        la a4, {mask_data};
+        vsetvli t0, a3, e8,m1,ta,mu;
+        vle8.v v0, (a4);
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8, v0.t;
+        li a4, {isExcept}
+        beqz a4, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        csrr a0, vstart;
+        beqz a0, 22f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      22:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+      test_{num}_end:
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_vs2_eq_v0_with_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v0, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v0, v0.t;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_vd_eq_vs2_with_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, ({vl}+7)/8;
+        la a4, {mask_data};
+        vsetvli t0, a3, e8,m1,ta,mu;
+        vle8.v v0, (a4);
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v8, (a1), v8, v0.t;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v8, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+
+    test_regression_with_mask: |
+      test_{num}:
+        COPY_INDEX_SRC(ST_ADDR, END_ADDR, {rs1_data}, {vl}, {vs2_data}, {sew}/8, {eew}/8, {ldins_i}, 1)
+
+        li TESTNUM, {num};
+        li a0, {vl};
+        la a1, {rs1_data};
+        la a2, {vs2_data};
+
+        li a3, ({vl}+7)/8;
+        la a4, {mask_data};
+        vsetvli t0, a3, e8,m1,ta,mu;
+        vle8.v v0, (a4);
+
+        li a3, {vl};
+        vsetvli t0, a3, e{sew},m8,ta,mu;
+        vsub.vv v16, v16, v16;
+
+        vsetvli t0, a0, e{eew},m8,ta,mu;
+        vle{eew}.v v8, (a2);
+
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        li a1, {start};
+        csrw vstart, a1;
+        li a1, ST_ADDR;
+        vl{order}xei{eew}.v v16, (a1), v8, v0.t;
+
+        csrr a0, vstart;
+        beqz a0, 11f;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      11:
+        la a1, test_{num}_data;
+        li a2, {vl};
+        vsetvli t0, a2, e{sew},m8,ta,mu;
+        vse{sew}.v v16, (a1);
+
+        .pushsection .data, 1;
+        .balign ({sew}/8)
+      test_{num}_data:
+        .fill ({vl}), ({sew}/8), 0;
+        .popsection
+
+    test_exception_vreg_misalign_with_lmul: |
+      test_{num}:
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sd t0, 0(t1);
+        li TESTNUM, {num};
+
+        li a0, {vl};
+        la a1, {rs1_data}
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        vl{order}xei{eew}.v v3, (a1), v8;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      test_{num}_end:
+
+    test_exception_invalid_sew : |
+      test_{num}:
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sd t0, 0(t1);
+        li TESTNUM, {num};
+
+        li a0, {vl};
+        la a1, {rs1_data}
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        vl{order}xei{eew}.v v3, (a1), v8;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      test_{num}_end:
+
+    test_exception_invalid_emul: |
+      test_{num}:
+        li t0, CAUSE_ILLEGAL_INSTRUCTION;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sd t0, 0(t1);
+        li TESTNUM, {num};
+
+        li a0, {vl};
+        la a1, {rs1_data}
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        vl{order}xei{eew}.v v8, (a1), v16;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      test_{num}_end:
+
+    test_exception_invalid_addr: |
+      test_{num}:
+        li t0, CAUSE_LOAD_ACCESS;
+        la t1, _expected_cause;
+        sw t0, 0(t1);
+        la t0, test_{num}_end;
+        la t1, _restore_addr;
+        sd t0, 0(t1);
+        li TESTNUM, {num};
+
+        li a0, {vl};
+        li a1, {addr};
+        vsetvli t0, a0, e{sew},m{lmul},ta,mu;
+        vl{order}xei{eew}.v v8, (a1), v16;
+        la a1, fail; 
+        jalr x0, 0(a1);
+      test_{num}_end:
+ 
+  rule: co_verification
+  rule_params:
+    test_basic_without_mask: np.array_equal(result, golden)
+    test_eew_neq_sew_without_mask: np.array_equal(result, golden)
+    test_vstart_without_mask: np.array_equal(result, golden)
+    test_tu_without_mask: np.array_equal(result, golden)
+    test_misalign_without_mask: np.array_equal(result, golden)
+    test_misalign_index_without_mask: np.array_equal(result, golden)
+    test_vd_eq_vs2_without_mask: np.array_equal(result, golden)
+    test_regression_without_mask: np.array_equal(result, golden)
+    test_basic_with_mask: np.array_equal(result, golden)
+    test_eew_neq_sew_with_mask: np.array_equal(result, golden)
+    test_vstart_with_mask: np.array_equal(result, golden)
+    test_tu_with_mask: np.array_equal(result, golden)
+    test_misalign_with_mask: np.array_equal(result, golden)
+    test_vd_eq_vs2_with_mask: np.array_equal(result, golden)
+    test_regression_with_mask: np.array_equal(result, golden)
+
+
+vlxxeix_v:
+  <<: *default
+  basic_cases:
+    test_basic_without_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        vs2 : vector_index_array(eew, sew, vl)
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_basic_with_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        mask: vector_mask_array_random(vl)
+        vs2 : vector_index_array(eew, sew, vl)
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+
+  random_cases:
+    test_regression_without_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : vector_sew_list_random(elen)
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls_random(lmul, sew, eew, vlen)
+        start: vector_vstart_list_random(vl)
+        vs2 : np.random.uniform(0, 2**21, vl).astype(bits_to_dtype_uint(eew))*(sew//8)
+        rs1 : np.random.uniform(0, 2**sew, vl).astype(bits_to_dtype_uint(sew))
+
+    test_regression_with_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : vector_sew_list_random(elen)
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls_random(lmul, sew, eew, vlen)
+        start: vector_vstart_list_random(vl)
+        mask: vector_mask_array_random(vl)
+        vs2 : np.random.uniform(0, 2**21, vl).astype(bits_to_dtype_uint(eew))*(sew//8)
+        rs1 : np.random.uniform(0, 2**sew, vl).astype(bits_to_dtype_uint(sew))
+
+
+  cases:
+    test_eew_neq_sew_without_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : vector_sew_list_neq_eew(eew)
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        vs2 : vector_index_array(eew, sew, vl)
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_vstart_without_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        start: vector_vstart_list_linspace(vl)
+        vs2 : vector_index_array(eew, sew, vl)
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+  
+    test_tu_without_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        vs2 : vector_index_array(eew, sew, vl)
+        origin: np.random.uniform(0, 2**sew, int(vlen*8/sew)).astype(bits_to_dtype_uint(sew))
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_misalign_without_mask:
+      matrix:
+        isExcept: 1
+        order: ['u', 'o']
+        eew : [16, elen]
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        offset: np.random.randint(1, int(sew/8))
+        vs2 : vector_index_array(eew, sew, vl)
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_misalign_index_without_mask:
+      matrix:
+        isExcept: 1
+        order: ['u', 'o']
+        eew : [16, elen]
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        vs2 : vector_index_array_misaligned(eew, sew, vl)
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_vd_eq_vs2_without_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        vs2 : vector_index_array(eew, sew, vl)
+        origin: vs2
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_eew_neq_sew_with_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : vector_sew_list_neq_eew(eew)
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        mask: vector_mask_array_random(vl)
+        vs2 : vector_index_array(eew, sew, vl)
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_vstart_with_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        start: vector_vstart_list_linspace(vl)
+        mask: vector_mask_array_random(vl)
+        vs2 : vector_index_array(eew, sew, vl)
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+    
+    test_tu_with_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        vs2 : vector_index_array(eew, sew, vl)
+        mask: vector_mask_array_random(vl)
+        origin: np.random.uniform(0, 2**sew, int(vlen*8/sew)).astype(bits_to_dtype_uint(sew))
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_misalign_with_mask:
+      matrix:
+        isExcept: 1
+        order: ['u', 'o']
+        eew : [16, elen]
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        offset: np.random.randint(1, int(sew/8))
+        mask: vector_mask_array_random(vl)*2+1
+        vs2 : vector_index_array(eew, sew, vl)
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_misalign_index_with_mask:
+      matrix:
+        isExcept: 1
+        order: ['u', 'o']
+        eew : [16, elen]
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        mask: vector_mask_array_random(vl)*4+3
+        vs2 : vector_index_array_misaligned(eew, sew, vl)
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_vs2_eq_v0_with_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        mask: np.linspace(0, 0xFF, vl, dtype=bits_to_dtype_uint(eew))*(eew//8)
+        vs2 : mask
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_vd_eq_vs2_with_mask:
+      matrix:
+        order: ['u', 'o']
+        eew : vector_sew_list(elen)
+        sew : eew
+        ldins_i: load_inst(eew)
+        vlen: vlen
+        lmul: vector_lmul_list((sew,eew), elen)
+        vl  : vector_vl_list_ls(lmul, sew, eew, vlen)
+        mask: vector_mask_array_random(vl)
+        vs2 : vector_index_array(eew, sew, vl)
+        origin: vs2
+        rs1 : np.linspace(0, 2**sew, vl, dtype=bits_to_dtype_uint(sew))
+
+    test_exception_vreg_misalign_with_lmul @ rs1, eew, sew, vl, lmul, order, isExcept, vlen:
+      setup: |
+        params_yml = []
+        params_yml.append([np.array([1], dtype=np.int16),   16,  16,   1,   4, "u", 1, vlen])  
+        params_yml.append([np.array([1], dtype=np.int16),   16,  16,   1,   4, "o", 1, vlen]) 
+    
+    test_exception_invalid_sew @ rs1, eew, sew, vl, lmul, order, isExcept, vlen:
+      setup: |
+        params_yml = []
+        params_yml.append([np.array([1], dtype=np.int64),   64, 128,   1,   1, "u", 1, vlen])  
+        params_yml.append([np.array([1], dtype=np.int64),   64, 128,   1,   1, "o", 1, vlen]) 
+    
+    test_exception_invalid_emul @ rs1, eew, sew, vl, lmul, order, isExcept, vlen:
+      setup: |
+        params_yml = []
+        params_yml.append([np.array([1], dtype=np.int32),    32,   8, 1,    4, "u", 1, vlen])  #eew/sew*lmul>8
+        params_yml.append([np.array([1], dtype=np.int8),      8,  32, 1, "f4", "u", 1, vlen])  #eew/sew*lmul<1/8
+        params_yml.append([np.array([1], dtype=np.int32),    32,   8, 1,    4, "o", 1, vlen])  
+        params_yml.append([np.array([1], dtype=np.int8),      8,  32, 1, "f4", "o", 1, vlen])  
+
+    test_exception_invalid_addr  @ rs1, addr, eew, sew, vl, lmul, order, isExcept, vlen:
+      setup: |
+        params_yml = []
+        params_yml.append([np.array([1], dtype=np.int16), 0xd8300000,  16,  16, 1,  1, "u", 1, vlen])  
+        params_yml.append([np.array([1], dtype=np.int16), 0xd8300000,  16,  16, 1,  1, "o", 1, vlen]) 
