@@ -9,11 +9,11 @@ setup(
         'rvpvp': ['*', '*/*', '*/*/*', '*/*/*/*/*'],
     },
     install_requires=[
-        'Click',
-        'rich',
-        'jax',
-        'jaxlib',
-        'PyYAML'
+        'Click==8.0.4',
+        'rich==10.0.0',
+        'jax==0.2.17',
+        'jaxlib==0.1.69',
+        'PyYAML==6.0'
     ],
     entry_points={
         'console_scripts': [
